@@ -190,6 +190,8 @@ flutter run
 
 ## 已知问题
 
+### 模拟器动态库冲突
+
 [devenv #2782](https://github.com/cachix/devenv/issues/2782)：`LD_LIBRARY_PATH` 导致模拟器加载不兼容的 `libc++.so`，报 `undefined symbol`，Flutter 因而显示 `No emulators available`。截至 2026-10-19，issue 仍开放，未确认正式修复。
 
 临时绕过：仅在查询、启动模拟器时移除该变量，不修改全局环境：
@@ -197,4 +199,14 @@ flutter run
 ```sh
 env -u LD_LIBRARY_PATH flutter emulators
 env -u LD_LIBRARY_PATH flutter emulators --launch my-android-emulator-name
+```
+
+### Android Build Tools 版本不匹配
+
+本次 Flutter 3.47.4 创建的项目使用 AGP 9.1.0，构建要求 Build Tools 36.0.0，但 devenv 默认 SDK 最高仅包含 35.0.0。Gradle 尝试自动安装缺失组件时，因 `/nix/store` 只读而失败。这是工具链默认版本未配套，与上述模拟器问题无关；`rolling` 也不保证各模块默认版本始终同步。
+
+处理方式：在 `devenv.nix` 中显式声明所需版本，重新进入 `devenv shell` 后重试（尚未验证构建通过）：
+
+```nix
+android.buildTools.version = [ "36.0.0" "35.0.0" ];
 ```
